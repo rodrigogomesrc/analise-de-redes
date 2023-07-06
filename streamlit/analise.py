@@ -2,52 +2,104 @@ import streamlit as st
 import streamlit.components.v1 as components
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib as mpl
 import pandas as pd
 import networkx as nx
 from nxviz import CircosPlot
 from pyvis.network import Network
 from IPython.core.display import display, HTML
+import numpy as np
+import pingouin as pg
+import community.community_louvain as community_louvain
 
-st.title('Visualizando dados com Streamlit')
+st.title('Análise de Relações entre Interesses e Hobbies')
 st.markdown("""Para essa análise será utilizado um dataset de Hobbies e Interesses disponível no
 [Kaggle](https://www.kaggle.com/code/ankur310794/network-analysis-of-hobbies-interests#network-analysis-hobbies-interests-of-young-people).""")
 
 df = pd.read_csv("https://raw.githubusercontent.com/rodrigogomesrc/analise-de-redes/main/datasets/responses.csv")
 
-movies = ["Horror", 
-          "Thriller", 
-          "Comedy",
-          "Romantic",
-          "Sci-fi", 
-          "War",
-          "Fantasy/Fairy tales", 
-          "Animated", 
-          "Documentary", 
-          "Western", 
-          "Action"]
+cols = [
+"Horror",
+"Thriller",
+"Comedy",
+"Romantic",
+"Sci-fi",
+"War",
+"Fantasy/Fairy tales",
+"Animated",
+"Documentary",
+"Western",
+"Dance",
+"Folk",
+"Country",
+"Classical music",
+"Pop",
+"Rock",
+"Metal or Hardrock",
+"Punk",
+"Hiphop, Rap",
+"Reggae, Ska",
+"Swing, Jazz",
+"Rock n roll",
+"Alternative",
+"Latino",
+"Techno, Trance",
+"Opera",
+"Action",
+"History",
+"Psychology",
+"Politics",
+"Mathematics",
+"Physics",
+"Internet",
+"PC",
+"Economy Management",
+"Biology",
+"Chemistry",
+"Reading",
+"Geography",
+"Foreign languages",
+"Medicine",
+"Law",
+"Cars",
+"Art exhibitions",
+"Religion",
+"Countryside, outdoors",
+"Dancing",
+"Musical instruments",
+"Writing",
+"Passive sport",
+"Active sport",
+"Gardening",
+"Celebrities",
+"Shopping",
+"Science and technology",
+"Theatre",
+"Fun with friends",
+"Adrenaline sports",
+"Pets",
+"Flying"
+]
+filtered_df = df.loc[:, cols]
+filtered_df.columns
 
-music = ["Dance", 
-         "Folk",
-         "Country", 
-         "Classical music",
-         "Pop", 
-         "Rock", 
-         "Metal or Hardrock", 
-         "Punk", 
-         "Hiphop, Rap", 
-         "Reggae, Ska", 
-         "Swing, Jazz", 
-         "Rock n roll", 
-         "Alternative", 
-         "Latino", 
-         "Techno, Trance",
-         "Opera"]
+def polychronic_correlation(x, y):
 
-filtered_df = df.loc[:, movies + music]
+    if len(x) != len(y):
+        raise ValueError("Input arrays must have the same length")
+
+    mean_x = np.mean(x)
+    mean_y = np.mean(y)
+    covariance = np.sum((x - mean_x) * (y - mean_y))
+    std_x = np.sqrt(np.sum((x - mean_x) ** 2))
+    std_y = np.sqrt(np.sum((y - mean_y) ** 2))
+    correlation = covariance / (std_x * std_y)
+    return correlation
 
 st.markdown("## Colunas do dataset filtrado")
 
-st.write("após filtrar somente as colunas referentes a filmes e músicas, temos as seguintes colunas:")
+st.write("Essas são as colunas do dataset filtrado, após retirar colunas que não estavam relacionadas a interesses e hobbies.")
 
 st.table(filtered_df.head())
 
@@ -65,62 +117,196 @@ relações mais fortes entre os gêneros.
 """)
 
 
-st.markdown("## Matriz de adjacência")
-
-
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
 
-#Calculando as relações entre os gêneros de música e filmes
-relations = {}
+#Calculando as correlações entre os temas
+correlations = {}
 
-for m in music:
-    for mov in movies:
-        count = ((filtered_df[m] >= 3) & (filtered_df[mov] >= 3)).sum()
-        key = f"{m}&{mov}"
-        relations[key] = count
+for col1 in filtered_df.columns:
+    for col2 in filtered_df.columns:
+        if col1 == col2:
+          continue
+        key = col1 + "&" + col2
+        corr = polychronic_correlation(filtered_df[col1], filtered_df[col2])
+        correlations[key] = corr
 
-max_count = max(relations.values())
-normalized_relations = {key: round(count / max_count, 2) for key, count in relations.items()}
+
+#Criando o grafo
 
 G = nx.Graph()
 
-G.add_nodes_from(movies, ntype='movies')
-G.add_nodes_from(music, ntype='music')
+G.add_nodes_from(cols)
 
-for key, weight in normalized_relations.items():
-    if weight > 0.7:
+for key, weight in correlations.items():
+    if weight > 0.2:
         music_genre, movie_genre = key.split('&')
         G.add_edge(music_genre, movie_genre, weight=weight)
 
+#Filtrando grafo para remover nós de grau 0 e arestas de laço
+
+G.remove_edges_from(nx.selfloop_edges(G))
+degrees = dict(G.degree())
+filtered_nodes = [node for node, degree in degrees.items() if degree > 0]
+filtered_graph = G.subgraph(filtered_nodes)
+
+## Mostrando o grafo filtrado
+
+st.markdown("## Grafo filtrado")
+pos = nx.spring_layout(filtered_graph, seed=42)
+nx.draw(filtered_graph, with_labels=False, node_color='lightblue', edge_color='gray', pos=pos)
+nx.draw_networkx_labels(filtered_graph, pos, font_size=6)
+st.pyplot()
+
+# Mostrando o histograma de distribuição de grau
+
+st.markdown("## Distribuição de graus")
+degree_sequence = [degree for _, degree in filtered_graph.degree()]
+plt.hist(degree_sequence, bins='auto', density=True)
+plt.xlabel('Grau')
+plt.ylabel('Quantidade')
+plt.title('Histograma de distribuição de grau')
+st.pyplot()
+
+#criando as comunidades
+
+partition = community_louvain.best_partition(filtered_graph, weight='Weight')
+
+for node in filtered_graph.nodes():
+    filtered_graph.nodes[node]['partition'] = partition[node]
+
+edge_weights = np.array([filtered_graph[u][v]['weight'] for u, v in filtered_graph.edges()])
+edge_widths = (edge_weights / np.percentile(edge_weights, 98)) * 3
+
+
+#Plotando circos plot com as comunidades
+
+st.markdown("## Circos Plot com as comunidades encontradas")
+
+plt.figure(figsize=(10, 10))
+c = CircosPlot(filtered_graph, node_order='partition', node_color='partition')
+st.pyplot()
+
+
+st.markdown("## Grafo padrão com as comunidades encontradas")
+
+pos = nx.spring_layout(filtered_graph, seed=42)
+
+plt.figure(figsize=(10, 10))
+cmap = mpl.colormaps['viridis']
+nx.draw_networkx_nodes(filtered_graph, pos, partition.keys(), node_size=70,
+                       cmap=cmap, node_color=list(partition.values()))
+nx.draw_networkx_edges(filtered_graph, pos, alpha=0.3, width=edge_widths)
+nx.draw_networkx_labels(filtered_graph, pos, font_size=8)
+
+st.pyplot()
+
+
 #Plotando a matriz de adjacência
+st.markdown("## Matriz de adjacência")
 
 adj_matrix = nx.adjacency_matrix(G)
 adj_df = pd.DataFrame(adj_matrix.toarray(), index=G.nodes(), columns=G.nodes())
-
+plt_1 = plt.figure(figsize=(15, 15))
 plt.imshow(adj_df, cmap='hot', interpolation='nearest')
 plt.xticks(range(len(adj_df.columns)), adj_df.columns, rotation='vertical')
 plt.yticks(range(len(adj_df.index)), adj_df.index)
 plt.colorbar()
 st.pyplot()
 
-st.markdown("## Circus Plot com os gêneros de música e filmes")
 
-#Plotando o grafo com pyviz
+# Engeinvector centrality
 
-for n, d in G.nodes(data=True):
-    G.nodes[n]['degree'] = G.degree(n)
+st.markdown("## Visualizando nós por Engeinvector Centrality")
 
-c = CircosPlot(G, node_order='degree', node_color='ntype', node_grouping='ntype')
+eigenvector_centrality = nx.eigenvector_centrality(filtered_graph)
+plt.figure(figsize=(10, 10))
+color_map = [eigenvector_centrality[node] for node in filtered_graph.nodes()]
+
+pos = nx.spring_layout(filtered_graph, seed=42)
+cmap = mpl.colormaps['rainbow']
+nx.draw(filtered_graph, with_labels=False, pos=pos, node_color=color_map, edge_color='gray', cmap=cmap)
+nx.draw_networkx_labels(filtered_graph, pos, font_size=6)
+
+sm = cm.ScalarMappable(cmap=cmap)
+sm.set_array([])
+cbar = plt.colorbar(sm)
+cbar.set_label('Eingenvector Centrality')
+st.pyplot()
+
+# Degree centrality
+
+st.markdown("## Visualizando nós por Degree Centrality")
+degree_centrality = nx.degree_centrality(filtered_graph)
+
+plt.figure(figsize=(10, 10))
+
+color_map = [degree_centrality[node] for node in filtered_graph.nodes()]
+
+pos = nx.spring_layout(filtered_graph, seed=42)
+cmap = mpl.colormaps['rainbow']
+nx.draw(filtered_graph, with_labels=False, pos=pos, node_color=color_map, edge_color='gray', cmap=cmap)
+nx.draw_networkx_labels(filtered_graph, pos, font_size=6)
+
+sm = cm.ScalarMappable(cmap=cmap)
+sm.set_array([])
+cbar = plt.colorbar(sm)
+cbar.set_label('Degree Centrality')
+st.pyplot()
+
+#Closeness centrality
+
+st.markdown("## Visualizando nós por Closeness Centrality")
+
+closeness_centrality = nx.closeness_centrality(filtered_graph)
+
+plt.figure(figsize=(10, 10))
+
+color_map = [closeness_centrality[node] for node in filtered_graph.nodes()]
+
+pos = nx.spring_layout(filtered_graph, seed=42)
+cmap = mpl.colormaps['rainbow']
+nx.draw(filtered_graph, with_labels=False, pos=pos, node_color=color_map, edge_color='gray', cmap=cmap)
+nx.draw_networkx_labels(filtered_graph, pos, font_size=6)
+
+sm = cm.ScalarMappable(cmap=cmap)
+sm.set_array([])
+cbar = plt.colorbar(sm)
+cbar.set_label('Closeness Centrality')
+st.pyplot()
+
+#Betweenness centrality
+
+st.markdown("## Visualizando nós por Betweenness Centrality")
+
+betweenness_centrality = nx.betweenness_centrality(filtered_graph)
+
+plt.figure(figsize=(10, 10))
+
+color_map = [betweenness_centrality [node] for node in filtered_graph.nodes()]
+
+pos = nx.spring_layout(filtered_graph, seed=42)
+cmap = mpl.colormaps['rainbow']
+nx.draw(filtered_graph, with_labels=False, pos=pos, node_color=color_map, edge_color='gray', cmap=cmap)
+nx.draw_networkx_labels(filtered_graph, pos, font_size=6)
+
+sm = cm.ScalarMappable(cmap=cmap)
+sm.set_array([])
+cbar = plt.colorbar(sm)
+cbar.set_label('Closeness Centrality')
 st.pyplot()
 
 
-nt = Network('1000px', '1000px', notebook=True,  bgcolor="#222222", font_color="white")
+#Plotando o grafo com pyviz
 
-for node, attributes in G.nodes(data=True):
+st.markdown("## Visualização do Pyviz")
+
+nt = Network('1000px', '1000px', notebook=True,  cdn_resources='in_line', bgcolor="#222222", font_color="white")
+
+for node, attributes in filtered_graph.nodes(data=True):
     nt.add_node(node, label=node)
 
-for node1, node2, attributes in G.edges(data=True):
+for node1, node2, attributes in filtered_graph.edges(data=True):
     nt.add_edge(node1, node2, weight=attributes['weight'])
 
 nt.barnes_hut()
@@ -128,8 +314,4 @@ nt.show("pyvis.html")
 
 HtmlFile = open("pyvis.html", 'r', encoding='utf-8')
 source_code = HtmlFile.read()
-
-
-st.markdown("## Visualização do Pyviz")
-
-components.html(source_code, height = 900,width=900)
+components.html(source_code, height = 500)

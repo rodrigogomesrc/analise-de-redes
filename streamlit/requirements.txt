@@ -4,3 +4,5 @@ pingouin
 pandas
 matplotlib
 pyvis
+numpy
+python-louvain
