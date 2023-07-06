@@ -12,7 +12,7 @@ st.title('Visualizando dados com Streamlit')
 st.markdown("""Para essa análise será utilizado um dataset de Hobbies e Interesses disponível no
 [Kaggle](https://www.kaggle.com/code/ankur310794/network-analysis-of-hobbies-interests#network-analysis-hobbies-interests-of-young-people).""")
 
-df = pd.read_csv("../datasets/responses.csv")
+df = pd.read_csv("https://raw.githubusercontent.com/rodrigogomesrc/analise-de-redes/main/datasets/responses.csv")
 
 movies = ["Horror", 
           "Thriller", 
