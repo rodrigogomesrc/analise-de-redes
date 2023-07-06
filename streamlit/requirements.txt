@@ -1,0 +1,6 @@
+streamlit
+nxviz
+pingouin
+pandas
+matplotlib
+pyvis

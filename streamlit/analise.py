@@ -124,9 +124,9 @@ for node1, node2, attributes in G.edges(data=True):
     nt.add_edge(node1, node2, weight=attributes['weight'])
 
 nt.barnes_hut()
-nt.show("network.html")
+nt.show("pyvis.html")
 
-HtmlFile = open("network.html", 'r', encoding='utf-8')
+HtmlFile = open("pyvis.html", 'r', encoding='utf-8')
 source_code = HtmlFile.read()
 
 
