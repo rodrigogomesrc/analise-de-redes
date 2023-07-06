@@ -19,6 +19,16 @@ st.markdown("""Para essa análise será utilizado um dataset de Hobbies e Intere
 
 df = pd.read_csv("https://raw.githubusercontent.com/rodrigogomesrc/analise-de-redes/main/datasets/responses.csv")
 
+
+st.write("""O dataset possui várias colunas referentes a interesses e hobbies, e também algumas colunas sobre características pessoais. 
+Para essa análise, foram retiradas as colunas que não eram referentes a interesses e hobbies.""")
+
+st.write("""O objetivo principal da Análise é identificar quais temas são mais relacionados entre si e dividi-los em grupos.
+Sendo assim, procuramos identificar a partir do gosto de um tema, quais outros temas também possam ser interessantes para quem gosta dele."")
+""")
+
+st.write("Após retirar as colunas que não eram referentes a Interesses e Hobbies, temos a seguinte lista de colunas:")
+
 cols = [
 "Horror",
 "Thriller",
@@ -97,23 +107,28 @@ def polychronic_correlation(x, y):
     correlation = covariance / (std_x * std_y)
     return correlation
 
-st.markdown("## Colunas do dataset filtrado")
-
-st.write("Essas são as colunas do dataset filtrado, após retirar colunas que não estavam relacionadas a interesses e hobbies.")
+st.write("Amostra dos dados: ")
 
 st.table(filtered_df.head())
 
 st.write("""
-É considerado que alguém gosta de dois gêneros ao mesmo tempo se a nota dada para ambos os gêneros for maior ou igual a 3.
-Não foi calculado a relação entre dois gêneros do mesmo tipo. Por exemplo, não foi calculado a relação entre Horror e Thriller, 
-pois ambos são do tipo filme.
-Dessa forma, o grafo resultante é um grafo bipartido. O que fica evidenciado na matriz de adjacência.
+O dataset representa, para cada coluna um tema e para cada linha uma resposta à pesquisa. As respostas são dadas em uma escala de 1 a 5 sobre
+quanto o respondente gosta do tema.
 """)
 
 st.write("""
-Para cada resposta em que uma pessoa gosta de dois gêneros, é acumulado um ponto para a relação entre esses dois gêneros. O valor é normalizado
-e a maior relação fica como sendo 1. É filtrado todos os valores em que a relação seja menor do que 0.7, sobrado na visualização somente as 
-relações mais fortes entre os gêneros.
+O grau da relação entre dois temas é calculado com base na correlação Policrônica. A correlação Policrônica, que é uma medida de correlação
+para variáveis categoricas. É feita a correlação entre o gosto de cada um dos temas com o gosto de todos os outros.
+""")
+
+st.write("""
+O Dataset é modelado usando grafos da seguinte forma: Os nós representam cada um dos temas e as arestas representam a correlação entre os temas.
+Dessa forma, quanto mais grossa é a aresta, maior a relação entre os temas. 
+""")
+
+st.write("""
+Foi definido um Threshold de 0.2 para a correlação, ou seja, apenas as correlações maiores que 0.2 são consideradas. Caso a correlação seja menor
+que 0.2, a aresta não é criada.
 """)
 
 
