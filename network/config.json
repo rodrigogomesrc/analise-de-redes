@@ -1,0 +1,53 @@
+{
+  "type": "network",
+  "version": "1.0",
+  "data": "data.json",
+  "logo": {
+    "file": "",
+    "link": "",
+    "text": "Rodrigo Rocha"
+  },
+  "text": {
+    "more": "O Grafo representa a relação entre os temas baseados nos gostos dos entrevistados. Os nós representa assuntos ou hobbies e as arestas a relação entre os gostos dos dois temas. Dessa forma, quanto mais espessa a aresta, maiores as chances de que, se uma pessoa gosta do tema, também gosta do assunto relacionado",
+    "intro": "O Grafo representa a relação entre os temas baseados nos gostos dos entrevistados.",
+    "title": "Relações entre temas por interesse"
+  },
+  "legend": {
+    "edgeLabel": "Proximidade entre temas",
+    "colorLabel": "Grupos semelhantes",
+    "nodeLabel": "Temas"
+  },
+  "features": {
+    "search": true,
+    "groupSelectorAttribute": "Modularity Class",
+    "hoverBehavior": "dim"
+  },
+  "informationPanel": {
+    "groupByEdgeDirection": false,
+    "imageAttribute": false
+  },
+  "sigma": {
+    "drawingProperties": {
+      "defaultEdgeType": "curve",
+      "defaultHoverLabelBGColor": "#002147",
+      "defaultLabelBGColor": "#ddd",
+      "activeFontStyle": "bold",
+      "defaultLabelColor": "#000",
+      "labelThreshold": 10,
+      "defaultLabelHoverColor": "#fff",
+      "fontStyle": "bold",
+      "hoverFontStyle": "bold",
+      "defaultLabelSize": 14
+    },
+    "graphProperties": {
+      "maxEdgeSize": 0.5,
+      "minEdgeSize": 0.2,
+      "minNodeSize": 1,
+      "maxNodeSize": 7
+    },
+    "mouseProperties": {
+      "maxRatio": 20,
+      "minRatio": 0.75
+    }
+  }
+}
