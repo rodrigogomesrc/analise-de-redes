@@ -24,7 +24,7 @@ st.write("""O dataset possui várias colunas referentes a interesses e hobbies, 
 Para essa análise, foram retiradas as colunas que não eram referentes a interesses e hobbies.""")
 
 st.write("""O objetivo principal da Análise é identificar quais temas são mais relacionados entre si e dividi-los em grupos.
-Sendo assim, procuramos identificar a partir do gosto de um tema, quais outros temas também possam ser interessantes para quem gosta dele."")
+Sendo assim, procuramos identificar a partir do gosto de um tema, quais outros temas também possam ser interessantes para quem gosta dele.""")
 """)
 
 st.write("Após retirar as colunas que não eram referentes a Interesses e Hobbies, temos a seguinte lista de colunas:")
