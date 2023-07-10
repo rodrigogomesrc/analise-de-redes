@@ -12,6 +12,7 @@ from IPython.core.display import display, HTML
 import numpy as np
 import pingouin as pg
 import community.community_louvain as community_louvain
+from PIL import Image
 
 st.title('Análise de Relações entre Interesses e Hobbies')
 st.markdown("""Para essa análise será utilizado um dataset de Hobbies e Interesses disponível no
@@ -130,6 +131,12 @@ Foi definido um Threshold de 0.2 para a correlação, ou seja, apenas as correla
 que 0.2, a aresta não é criada.
 """)
 
+st.write("""
+
+Uma possível aplicação prática dessa análise é determinar assuntos que um usuário possa gostar de acordo com outros assuntos que ele gosta.
+Essa é uma possível abordagem na construção de um sistema de recomendações.
+""")
+
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
@@ -167,6 +174,20 @@ filtered_graph = G.subgraph(filtered_nodes)
 ## Mostrando o grafo filtrado
 
 st.markdown("## Grafo filtrado")
+
+
+st.write("""
+
+O grafo foi filtrado para remover todas os nós que não têm arestas (grau 0). Ou seja, todos os nós que não têm uma correlação maior que 0.2
+com nenhum dos outros temas.
+""")
+
+st.write("""
+
+Após a filtragem, temos a seguinte rede:
+""")
+
+
 pos = nx.spring_layout(filtered_graph, seed=42)
 nx.draw(filtered_graph, with_labels=False, node_color='lightblue', edge_color='gray', pos=pos)
 nx.draw_networkx_labels(filtered_graph, pos, font_size=6)
@@ -175,6 +196,13 @@ st.pyplot()
 # Mostrando o histograma de distribuição de grau
 
 st.markdown("## Distribuição de graus")
+
+st.write("""
+
+Após calcularmos o histograma de graus, nós vemos que o valor mais comum de graus para um nó da rede é entre 8 e 10.
+""")
+
+
 degree_sequence = [degree for _, degree in filtered_graph.degree()]
 plt.hist(degree_sequence, bins='auto', density=True)
 plt.xlabel('Grau')
@@ -185,6 +213,16 @@ st.pyplot()
 #criando as comunidades
 
 partition = community_louvain.best_partition(filtered_graph, weight='Weight')
+
+st.write("""
+
+Usando o método de Louvain foram encontradas 5 comunidades na rede. As comunidades para esse Dataset são os grupos de temas relacionados.
+Em cada comunidade existe uma grande chance de que um usuário que goste de um dos temas goste, ou possa gostar de outro da mesma comunidade.
+""")
+
+st.write("""
+Uma aplicação em um sistema de recomendação seria recomendar todos os outros temas da mesma comunidade caso o a pessoa ainda não conheça.
+""")
 
 for node in filtered_graph.nodes():
     filtered_graph.nodes[node]['partition'] = partition[node]
@@ -197,12 +235,18 @@ edge_widths = (edge_weights / np.percentile(edge_weights, 98)) * 3
 
 st.markdown("## Circos Plot com as comunidades encontradas")
 
+st.write("""
+Podemos visualizar as comunidades também como um Circos Plot:
+""")
+
 plt.figure(figsize=(10, 10))
 c = CircosPlot(filtered_graph, node_order='partition', node_color='partition')
 st.pyplot()
 
 
 st.markdown("## Grafo padrão com as comunidades encontradas")
+
+st.write("Podemos visualizar o mesmo grafo gerado destacando as comunidades:")
 
 pos = nx.spring_layout(filtered_graph, seed=42)
 
@@ -219,6 +263,8 @@ st.pyplot()
 #Plotando a matriz de adjacência
 st.markdown("## Matriz de adjacência")
 
+st.write("A matrix de adjacência criada é simétrica por ser um grafo não direcionado.")
+
 adj_matrix = nx.adjacency_matrix(G)
 adj_df = pd.DataFrame(adj_matrix.toarray(), index=G.nodes(), columns=G.nodes())
 plt_1 = plt.figure(figsize=(15, 15))
@@ -232,6 +278,8 @@ st.pyplot()
 # Engeinvector centrality
 
 st.markdown("## Visualizando nós por Engeinvector Centrality")
+
+st.write("Para esse dataset, valores altos de sinalizam que um tema, apesar de não ser popular, é ligado a outros temas populares.")
 
 eigenvector_centrality = nx.eigenvector_centrality(filtered_graph)
 plt.figure(figsize=(10, 10))
@@ -251,6 +299,12 @@ st.pyplot()
 # Degree centrality
 
 st.markdown("## Visualizando nós por Degree Centrality")
+
+st.write("""
+O gosto de algo com um alto degree centrality está associado (correlacionado) ao gosto de muitas coisas. 
+Baseado na visualização gerada, uma possível inferência é quem gosta de música clássica gosta de muitos tipos de música.
+""")
+
 degree_centrality = nx.degree_centrality(filtered_graph)
 
 plt.figure(figsize=(10, 10))
@@ -293,6 +347,11 @@ st.pyplot()
 
 st.markdown("## Visualizando nós por Betweenness Centrality")
 
+st.write("""
+Os nós com uma maior betweeness centrality ligam as difererentes comunidades. 
+Então se quiser unir duas comunidades, pode focar nesse assunto específico.
+""")
+
 betweenness_centrality = nx.betweenness_centrality(filtered_graph)
 
 plt.figure(figsize=(10, 10))
@@ -329,3 +388,9 @@ nt.show("pyvis.html")
 HtmlFile = open("pyvis.html", 'r', encoding='utf-8')
 source_code = HtmlFile.read()
 components.html(source_code, height = 500)
+
+st.markdown("## Visualização criada com Gephi")
+
+#plota a image gephi.png
+image = Image.open('gephi.png')
+st.image(image, caption='Visualização de comunidades criada com o Gephi', use_column_width=True)
